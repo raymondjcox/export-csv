@@ -19,6 +19,7 @@
             names = [],
             i,
             x,
+            that = this,
 
             // Options
             dateFormat = options.dateFormat || '%Y-%m-%d %H:%M:%S',
@@ -31,6 +32,14 @@
             if (series.options.includeInCSVExport !== false) {
                 names.push(series.name);
                 each(series.points, function (point) {
+                    if (that.userOptions.chart.type === 'map') {
+                      if (point['iso-a2'] !== null && point['iso-a2'] !== undefined && point['iso-a2'].match(/^[A-Z]{2}$/g)) {
+                        point.x = point['iso-a2'];
+                      } else {
+                        return true;
+                      }
+                    }
+
                     if (!rows[point.x]) {
                         rows[point.x] = [];
                     }
@@ -41,7 +50,11 @@
                         rows[point.x].name = point.name;
                     }
 
-                    rows[point.x][i] = point.y;
+                    if (that.userOptions.chart.type === 'map') {
+                      rows[point.x][i] = point.value;
+                    } else {
+                      rows[point.x][i] = point.y;
+                    }
                 });
                 i += 1;
             }
@@ -54,9 +67,22 @@
             }
         }
         // Sort it by X values
-        rowArr.sort(function (a, b) {
-            return a.x - b.x;
-        });
+        if (that.userOptions.chart.type === 'map') {
+          rowArr.sort(function (a, b) {
+            if (a.x < b.x){
+              return -1;
+            } else if (a.x > b.x) {
+              return  1;
+            } else {
+              return 0;
+            }
+          });
+        } else {
+          rowArr.sort(function (a, b) {
+              return a.x - b.x;
+          });
+        }
+
 
         // Add header row
         csv = (xAxis.isDatetimeAxis ? 'DateTime' : 'Category') + itemDelimiter +
